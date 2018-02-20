@@ -1,0 +1,153 @@
+use strict;
+use warnings;
+use Math::Trig;
+
+#Usage: [participant file] [ground truth] [output file] [matlab outfile]
+
+my $numArgs = $#ARGV+1;
+if($numArgs<3)
+{
+    print "Usage: [participant file] [ground truth] [output file] [matlab outfile (optional)]\n";
+    print "Note: The optional argument creates a file with estimated_error true_error (for easy processing in Matlab); if the input does not contain a fourth column (estimated error), the file will not be created.\n";
+    exit;
+}
+
+open(OUT,">$ARGV[2]")||die $!;
+
+my %estLat=();
+my %estLng=();
+my %error=();
+open(IN,$ARGV[0])||die $!;
+
+my %estError=();
+my %trueError=();
+
+#participants' file
+while(<IN>)
+{
+	chomp;
+	$_ =~ s/\r//g;
+	my @tokens = split(/;/,$_);
+	my $id = $tokens[0];
+	my $lat = $tokens[1];
+	my $lng = $tokens[2];
+
+	if( (@tokens)==4)
+	{
+	    $estError{$id}=$tokens[3];
+	}
+
+	$estLat{$id}=$lat;
+	$estLng{$id}=$lng;
+}
+close(IN);
+
+my $max1=0;
+my $max10=0;
+my $max100=0;
+my $max500=0;
+my $max1000=0;
+my $max20000=0;
+
+my $testCases=0;
+#ground truth
+print OUT "photoID estimatedLat estimatedLng groundTruthLat groundTruthLng errorInKM\n";
+open(IN,$ARGV[1])||die $!;
+while(<IN>)
+{
+	$testCases++;
+	chomp;
+	$_ =~ s/\r//g;
+	my @tokens = split(/\s+/,$_);
+	my $id = $tokens[0];
+	my $lat2 = $tokens[1];
+	my $lon2 = $tokens[2];
+
+	if(exists $estLat{$id})
+	{
+		my $lat1 = $estLat{$id};
+		my $lon1 = $estLng{$id};
+		my $r=6371;
+		my $dlong = deg2rad($lon1) - deg2rad($lon2);
+		my $dlat  = deg2rad($lat1) - deg2rad($lat2);
+		my $a = sin($dlat/2)**2 +cos(deg2rad($lat1))*cos(deg2rad($lat2))*sin($dlong/2)**2;
+		my $c = 2 * (asin(sqrt($a)));
+		my $km = $r * $c; 
+	
+		$trueError{$id}=$km;
+
+		$error{$id}=$km;
+
+		if($km<=20000){$max20000++;}
+		if($km<=1000){$max1000++;}
+		if($km<=500){$max500++;}
+		if($km<=100){$max100++;}
+		if($km<=10){$max10++;}
+		if($km<=1){$max1++;}
+		
+		print OUT "$id $lat1 $lon1 $lat2 $lon2 $km\n";
+	}
+	else
+	{
+	    #print OUT "id $id from $ARGV[1] not found in $ARGV[0]\n";
+	    #exit;
+	}
+}
+close(IN);
+
+print OUT "Evaluated items: ".(keys %error)."\n";
+print OUT "Number of test items read from participant's file: ".(keys %estLat)."\n";
+print OUT "Total number of test cases in ground truth: $testCases\n";
+print OUT "Number of estimates within 1km of the ground truth: $max1, ".($max1/(keys %error)*100)."%\n";
+print OUT "Number of estimates within 10km of the ground truth: $max10, ".($max10/(keys %error)*100)."%\n";
+print OUT "Number of estimates within 100km of the ground truth: $max100, ".($max100/(keys %error)*100)."%\n";
+print OUT "Number of estimates within 500km of the ground truth: $max500, ".($max500/(keys %error)*100)."%\n";
+print OUT "Number of estimates within 1000km of the ground truth: $max1000\n";
+print OUT "Number of estimates within 20,000km of the ground truth (sanity check! Should contain all test cases!): $max20000\n";
+
+my @errors=();
+foreach my $key(keys %error){push(@errors,$error{$key});}
+
+my @sorted = sort {$a <=> $b} (@errors);
+my $median = -1;
+
+my $numEntries = (@sorted);
+if( ($numEntries%2)!=0)
+{
+	$median = $sorted[ ($numEntries-1)/2 ]; 
+}
+else
+{
+	my $med1 = $sorted[ ($numEntries/2)];
+	my $med2 = $sorted[ ($numEntries/2)-1];
+	$median = ($med1+$med2)/2.0;
+}
+
+print OUT "Median error in km: $median\n";
+
+print OUT "\n\n1km 10km 100km Median error\n";
+print OUT ($max1/(keys %error)*100)."%\t".($max10/(keys %error)*100)."%\t".($max100/(keys %error)*100)."%\t".$median."\n";
+
+close(OUT);
+
+#is there a fourth argument (matlab outfile?)
+#did the participant actually provide error estimates?
+if($numArgs==4 && (keys %estError>0))
+{
+    open(OUT,">$ARGV[3]")||die $!;
+    foreach my $key(%estError)
+    {
+	my $ee=-1;
+	if(exists $estError{$key}){$ee=$estError{$key};}
+	my $te=-1;
+	if(exists $trueError{$key}){$te=$trueError{$key};}
+
+	if($ee>=0 && $te>=0)
+	{
+	    print OUT "$ee $te\n";
+	}
+    }
+    close(OUT);
+    print "Wrote matlab outfile (for correlation analysis) to $ARGV[3]\n";
+}
+
