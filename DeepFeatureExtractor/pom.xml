@@ -80,7 +80,7 @@
           </descriptorRefs>
           <archive>
             <manifest>
-              <mainClass>uk.ac.soton.ecs.App</mainClass>
+              <mainClass>uk.ac.soton.ecs.jsh2.DeepFeatureExtractor</mainClass>
             </manifest>
           </archive>
         </configuration>
