@@ -7,9 +7,12 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -21,7 +24,6 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.openimaj.hadoop.mapreduce.TextBytesJobUtil;
 import org.openimaj.hadoop.sequencefile.SequenceFileUtility;
 import org.openimaj.image.ImageUtilities;
 import org.openimaj.image.MBFImage;
@@ -190,15 +192,21 @@ public class DeepFeatureExtractor extends Configured implements Tool {
 			System.exit(1);
 		}
 
-		final Job job = TextBytesJobUtil.createJob(options.getInputPaths(), options.getOutputPath(), null,
-				this.getConf());
-		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(Text.class);
+		final Job job = new Job(this.getConf());
+		job.setInputFormatClass(SequenceFileInputFormat.class);
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(Text.class);
+		job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+		SequenceFileInputFormat.setInputPaths(job, options.getInputPaths());
+		SequenceFileOutputFormat.setOutputPath(job, options.getOutputPath());
+		SequenceFileOutputFormat.setCompressOutput(job, true);
+		SequenceFileOutputFormat.setOutputCompressorClass(job, DefaultCodec.class);
+		SequenceFileOutputFormat.setOutputCompressionType(job, CompressionType.BLOCK);
+
 		job.setJarByClass(this.getClass());
 		job.setMapperClass(FeatureMap.class);
 		job.setNumReduceTasks(0); // no reducer is required!
-
-		SequenceFileOutputFormat.setCompressOutput(job, true);
 
 		long start, end;
 		start = System.currentTimeMillis();
