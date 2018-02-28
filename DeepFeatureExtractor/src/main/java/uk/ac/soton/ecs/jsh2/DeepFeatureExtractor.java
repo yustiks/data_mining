@@ -33,6 +33,8 @@ import org.openimaj.image.processing.resize.ResizeProcessor;
  * An attempt at a ResNet50-based feature extractor that can be deployed on
  * hadoop
  *
+ * @author Jonathon Hare (jsh2@ecs.soton.ac.uk)
+ *
  */
 @SuppressWarnings("deprecation")
 public class DeepFeatureExtractor extends Configured implements Tool {
@@ -47,6 +49,9 @@ public class DeepFeatureExtractor extends Configured implements Tool {
 
 		@Option(name = "--output", aliases = "-o", required = true, usage = "Output Sequence File", metaVar = "STRING")
 		String output;
+
+		@Option(name = "--rescale", required = false, usage = "Should the images be rescaled and cropped")
+		boolean rescale = false;
 
 		/**
 		 * @return the input paths
@@ -66,22 +71,31 @@ public class DeepFeatureExtractor extends Configured implements Tool {
 	}
 
 	public static class FeatureMap extends Mapper<Text, BytesWritable, Text, Text> {
-		final static int IMAGE_SIZE = 228;
+		final static String RESCALE_KEY = "FeatureMap.RESCALE";
+		final static int IMAGE_SIZE = 224;
 		private ResizeProcessor rp;
 		private ComputationGraph network;
 		private VGG16ImagePreProcessor scaler;
+		boolean rescale;
 
-		public FeatureMap() throws IOException {
+		static enum Counters {
+			SUCCEEDED, FAILED
+		}
+
+		@Override
+		protected void setup(Mapper<Text, BytesWritable, Text, Text>.Context context)
+				throws IOException, InterruptedException
+		{
+			super.setup(context);
+
 			rp = new ResizeProcessor(IMAGE_SIZE);
 
 			network = ModelSerializer.restoreComputationGraph(
 					DeepFeatureExtractor.class.getResourceAsStream("resnet50_dl4j_inference.zip"));
 
 			scaler = new VGG16ImagePreProcessor();
-		}
 
-		static enum Counters {
-			SUCCEEDED, FAILED
+			rescale = context.getConfiguration().getBoolean(RESCALE_KEY, false);
 		}
 
 		/**
@@ -127,7 +141,8 @@ public class DeepFeatureExtractor extends Configured implements Tool {
 				// we load it into an image
 				MBFImage image = ImageUtilities.readMBF(bais);
 				// scale and crop
-				image = image.processInplace(rp).extractCenter(IMAGE_SIZE, IMAGE_SIZE);
+				if (rescale)
+					image = image.processInplace(rp).extractCenter(IMAGE_SIZE, IMAGE_SIZE);
 
 				// convert to a tensor and mean-center
 				final INDArray input = image2array(image);
@@ -207,6 +222,8 @@ public class DeepFeatureExtractor extends Configured implements Tool {
 		job.setJarByClass(this.getClass());
 		job.setMapperClass(FeatureMap.class);
 		job.setNumReduceTasks(0); // no reducer is required!
+
+		this.getConf().setBoolean(FeatureMap.RESCALE_KEY, options.rescale);
 
 		long start, end;
 		start = System.currentTimeMillis();
