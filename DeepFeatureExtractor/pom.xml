@@ -103,9 +103,9 @@
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
           <archive>
-            <manifest>
+            <!-- <manifest>
               <mainClass>uk.ac.soton.ecs.jsh2.DeepFeatureExtractor</mainClass>
-            </manifest>
+            </manifest> -->
           </archive>
         </configuration>
       </plugin>
