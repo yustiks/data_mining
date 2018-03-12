@@ -23,17 +23,17 @@ Pmodel = ResNet50(include_top=True, weights='imagenet')
 
 # format a ndarray as a string
 def vector_to_csv(input):
-     fmt = ["%.18e", ] * input.shape[1]
+     fmt = ["%.5e", ] * input.shape[1]
      format = ','.join(fmt)
      return format%tuple(input[0])
 
 # output files
-featFile = open("ResNet50-features-avg.txt","w") 
-predFile = open("ResNet50-predictions.txt","w") 
-clasFile = open("ResNet50-labels.txt","w") 
+featFile = open("ResNet50-features-avg"+sys.argv[1]+".txt","w") 
+predFile = open("ResNet50-predictions"+sys.argv[1]+".txt","w") 
+clasFile = open("ResNet50-labels"+sys.argv[1]+".txt","w") 
 
 # iterate over all inout SequenceFiles containing images
-for i in range(1,len(sys.argv)):
+for i in range(2,len(sys.argv)):
     print ("Processing " + sys.argv[i])
     reader = SequenceFile.Reader(sys.argv[i])
 
@@ -45,7 +45,7 @@ for i in range(1,len(sys.argv)):
 
     # iterate over all images (key is the flickrid; value is the jpeg bytes)
     while reader.next(key, value):
-        key = key.toString()
+        skey = key.toString()
 
         # load the image
         image = Image.open(io.BytesIO(value.toString()))
@@ -58,9 +58,9 @@ for i in range(1,len(sys.argv)):
         predictions = Pmodel.predict(image)
 
         # write the values
-        featFile.write(key + "," + vector_to_csv(features))
-        predFile.write(key + "," + vector_to_csv(predictions))
-        clasFile.write(key + "," + vector_to_csv(decode_predictions(predictions, top=10)[0]))
+        featFile.write(skey + "," + vector_to_csv(features) + "\n")
+        predFile.write(skey + "," + vector_to_csv(predictions) + "\n")
+        clasFile.write(skey + "," + str(decode_predictions(predictions, top=10)[0]) + "\n")
 
 featFile.close()
 predFile.close()
