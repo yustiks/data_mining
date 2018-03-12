@@ -157,11 +157,11 @@ public class DeepFeatureExtractor extends Configured implements Tool {
 
 				// the final fully connected layer - this gives you the class probs over the
 				// imagenet classes. Could be useful for learning...
-				context.write(new Text(key.toString() + "fc1000"), encode(activations.get("fc1000")));
+				context.write(new Text(key.toString() + "_fc1000"), encode(activations.get("fc1000")));
 
 				// whilst we're here, we might as well decode the fc1000 layer into image top 5
 				// imagenet classes (perhaps use these as 'tags' in a metadata-based model?
-				context.write(new Text(key.toString() + "fc1000"),
+				context.write(new Text(key.toString() + "_fc1000_classes"),
 						new Text(TrainedModels.VGG16.decodePredictions(activations.get("fc1000"))));
 
 				context.getCounter(Counters.SUCCEEDED).increment(1L);
@@ -182,9 +182,9 @@ public class DeepFeatureExtractor extends Configured implements Tool {
 		private Text encode(INDArray indArray) {
 			final INDArray flat = Nd4j.toFlattened(indArray);
 			final int len = flat.shape()[1];
-			String s = flat.getScalar(0) + "";
+			String s = flat.getDouble(0) + "";
 			for (int i = 1; i < len; i++) {
-				s += ", " + flat.getScalar(i);
+				s += ", " + flat.getDouble(i);
 			}
 
 			return new Text(s);
