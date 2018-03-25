@@ -10,5 +10,5 @@ The code does the following:
 
   ・Convert all letters to lower case
 
-  ・finally combines the 9 files into one file clled train_cleaned.csv
+  ・Finally combines the 9 files into one file called train_cleaned.csv
 
