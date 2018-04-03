@@ -1,0 +1,28 @@
+ FULL CLEAN:
+ Removes columns accuracy, views, licenceID and dates uploaded.
+ Adds a few frequently occuring words to the stopwords, like geotagged or landscape.
+FOR EACH ROW:
+ If a row has no tags, it is set to nan.
+ Each row is seen as one string so it splits it in words.
+ Turns everything into lower case.
+ If a word matches the machine tag format it gets removed.
+ Removes punctuation and numbers.
+ If a word is not nan, not a space, doesn't belong in the stopwords or is bigger than 1 letter, it is added to the clean new row.
+ After cleaning the old row, if the new one has no tags it is set to nan.
+ All the words in the new row are joined into one string again.
+ After this procedure in all the rows of the file, a new csv file is created while the empty rows are being removed.
+ 
+ CLEAN:
+ 1. Removes columns accuracy, views, licenceID and dates uploaded.
+2. Adds a few frequently occuring words to the stopwords, like geotagged or landscape.
+FOR EACH ROW:
+3. If a row has no tags, it is set to nan.
+4. Each row is seen as one string so it splits it in words.
+5. Turns everything into lower case.
+6. If a word matches the machine tag lat and lon format, it removes punctuation (:, =). I do it seperately because i want to keep
+   the machine tags for them and remove all other numbers.
+7. Removes punctuation and numbers.
+8. If a word is not nan, not a space, doesn't belong in the stopwords or is bigger than 1 letter, it is added to the clean new row.
+9. After cleaning the old row, if the new one has no tags it is set to nan.
+10. All the words in the new row are joined into one string again.
+11. After this procedure in all the rows of the file, a new csv file is created while the empty rows are being removed.
