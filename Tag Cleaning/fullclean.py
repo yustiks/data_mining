@@ -61,12 +61,9 @@ folder_list = ['train_1',
              'test']
          
 def main():
-#    for folder in folder_list:
-#        os.chdir("C:\\Users\\irene\\Downloads\\Ειρήνη\\University of Southamton\\Classes\\Data Mining\\group assignment\\"+folder)
-        os.chdir("C:\\Users\\irene\\Downloads\\Ειρήνη\\University of Southamton\\Classes\\Data Mining\\group assignment\\testing")
-
-        #cleanandmachinetags()
-        clean()
+    for folder in folder_list:
+        os.chdir("C:\\Users\\irene\\Downloads\\Ειρήνη\\University of Southamton\\Classes\\Data Mining\\group assignment\\"+folder)
+        fullclean()
     
    
 if __name__ == "__main__":
